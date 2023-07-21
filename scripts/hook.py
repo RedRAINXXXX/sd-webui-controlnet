@@ -28,8 +28,8 @@ MARK_EPS = 1e-3
 def prompt_context_is_marked(x):
     t = x[..., 0, :]
     m = torch.abs(t) - POSITIVE_MARK_TOKEN
-    m = torch.mean(torch.abs(m)).detach().cpu().float().numpy()
-    return float(m) < MARK_EPS
+    return torch.mean(torch.abs(m)) < MARK_EPS
+
 
 
 def mark_prompt_context(x, positive):
@@ -56,6 +56,20 @@ def mark_prompt_context(x, positive):
 disable_controlnet_prompt_warning = True
 # You can disable this warning using disable_controlnet_prompt_warning.
 
+def test_func(func,*args,**kwargs):
+    from torch.profiler import profile, record_function, ProfilerActivity
+    prof = profile(
+            activities=[ProfilerActivity.CPU],
+            with_stack=True,
+            schedule=torch.profiler.schedule(wait=1, warmup=1, active=3, repeat=2),
+            on_trace_ready=torch.profiler.tensorboard_trace_handler('log'),
+            record_shapes=True,
+    )
+    prof.start()
+    for i in range(20):
+        func(*args,**kwargs)
+        prof.step()
+    prof.stop()
 
 def unmark_prompt_context(x):
     if not prompt_context_is_marked(x):
